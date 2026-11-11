@@ -1,0 +1,47 @@
+"""应用常量定义"""
+
+APP_NAME = "PostManage"
+APP_VERSION = "0.2.0"
+APP_AUTHOR = "谭成洁"
+APP_LICENSE = "MIT License"
+APP_COPYRIGHT = f"Copyright © 2026 {APP_AUTHOR}. All Rights Reserved."
+
+# HTTP 方法
+HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+
+# 默认请求超时（毫秒）
+DEFAULT_TIMEOUT_MS = 30000
+
+# 历史记录最大保存条数
+MAX_HISTORY_COUNT = 500
+
+# Body 类型
+BODY_TYPE_NONE = "none"
+BODY_TYPE_JSON = "json"
+BODY_TYPE_FORM = "form"
+BODY_TYPE_URLENCODED = "urlencoded"
+BODY_TYPE_RAW = "raw"
+BODY_TYPE_BINARY = "binary"
+
+BODY_TYPES = [
+    BODY_TYPE_NONE,
+    BODY_TYPE_JSON,
+    BODY_TYPE_FORM,
+    BODY_TYPE_URLENCODED,
+    BODY_TYPE_RAW,
+    BODY_TYPE_BINARY,
+]
+
+# 认证类型
+AUTH_TYPE_NONE = "none"
+AUTH_TYPE_BASIC = "basic"
+AUTH_TYPE_BEARER = "bearer"
+AUTH_TYPE_APIKEY = "apikey"
+
+AUTH_TYPES = [AUTH_TYPE_NONE, AUTH_TYPE_BASIC, AUTH_TYPE_BEARER, AUTH_TYPE_APIKEY]
+
+# 请求 Tab 索引
+TAB_PARAMS = 0
+TAB_HEADERS = 1
+TAB_BODY = 2
+TAB_AUTH = 3

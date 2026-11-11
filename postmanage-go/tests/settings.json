@@ -1,0 +1,17 @@
+{
+  "default_timeout": 0,
+  "theme": "",
+  "language": "",
+  "global_headers": [
+    {
+      "key": "Authorization",
+      "value": "Bearer global-token-123",
+      "enabled": true
+    },
+    {
+      "key": "X-App-Env",
+      "value": "production",
+      "enabled": true
+    }
+  ]
+}

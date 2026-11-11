@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PostManage v2.0 - 高性能 API 调试与压测平台</title>
+  <style>
+    /* ─── 主题配色：严格对标 Python 版本低饱和度护眼色板 (themes.py) ─── */
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-sidebar: #f4f5f7;
+      --bg-input: #ffffff;
+      --bg-code: #f8f8f8;
+      --bg-hover: #e5e7eb;
+      --bg-selected: #e5edfa;
+      --bg-tab-active: #ffffff;
+      --bg-tab-inactive: #e8eaed;
+
+      --text-primary: #1f2937;
+      --text-secondary: #4b5563;
+      --text-muted: #9ca3af;
+      --text-name: #2563eb;
+
+      --border-color: #d1d5db;
+      --border-light: #e5e7eb;
+      --border-focus: #3b82f6;
+
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --send-btn: #10b981;
+      --send-btn-hover: #059669;
+      --send-btn-pressed: #047857;
+
+      --status-success: #15803d;
+      --status-redirect: #b45309;
+      --status-error: #b91c1c;
+
+      --statusbar-bg: #3b82f6;
+      --statusbar-text: #ffffff;
+
+      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", Consolas, Monaco, "Courier New", monospace;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1e1e1e;
+      --bg-secondary: #252526;
+      --bg-sidebar: #252526;
+      --bg-input: #3c3c3c;
+      --bg-code: #1e1e1e;
+      --bg-hover: #2d4a7a;
+      --bg-selected: #3a6fbf;
+      --bg-tab-active: #1e1e1e;
+      --bg-tab-inactive: #2d2d2d;
+
+      --text-primary: #d4d4d4;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --text-name: #60a5fa;
+
+      --border-color: #475569;
+      --border-light: #334155;
+      --border-focus: #60a5fa;
+
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --send-btn: #10b981;
+      --send-btn-hover: #059669;
+      --send-btn-pressed: #047857;
+
+      --statusbar-bg: #1e293b;
+      --statusbar-text: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-ui);
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      font-size: 13px;
+      user-select: none;
+    }
+
+    /* ─── 顶部系统菜单栏 (QMenuBar 风格) ────────────────────────── */
+    .menu-bar {
+      height: 32px;
+      background: var(--bg-sidebar);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--primary);
+      margin-right: 14px;
+    }
+    .app-brand-badge {
+      font-size: 10px;
+      padding: 1px 5px;
+      background: var(--border-light);
+      border-radius: 3px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .menu-item {
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-secondary);
+      transition: all 0.12s;
+      position: relative;
+    }
+    .menu-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 28px;
+      left: 0;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 999;
+      min-width: 160px;
+      padding: 4px 0;
+    }
+    .menu-item:hover .dropdown-menu {
+      display: block;
+    }
+    .dropdown-item {
+      padding: 6px 14px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-primary);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .dropdown-item:hover {
+      background: var(--bg-selected);
+    }
+    .dropdown-divider {
+      height: 1px;
+      background: var(--border-light);
+      margin: 4px 0;
+    }
+
+    .top-quick-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .btn-quick {
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      color: var(--text-secondary);
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-quick:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    /* ─── 核心主体区域 ─────────────────────────────────────────── */
+    .app-workspace {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ─── 左侧面板 (280px 宽度，对标 Python left_panel) ───────────── */
+    .left-panel {
+      width: 280px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .left-tabs-header {
+      height: 36px;
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-tab-inactive);
+    }
+    .left-tab-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .left-tab-btn.active {
+      background: var(--bg-sidebar);
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .left-tab-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 6px;
+    }
+    .panel-action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: 6px;
+    }
+    .action-icons {
+      display: flex;
+      gap: 4px;
+    }
+    .icon-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    .icon-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-color);
+      color: var(--text-primary);
+    }
+
+    /* 集合树与历史列表项 */
+    .tree-col-item {
+      border-radius: 4px;
+      margin-bottom: 2px;
+    }
+    .col-header {
+      padding: 6px 8px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background 0.12s;
+    }
+    .col-header:hover {
+      background: var(--bg-hover);
+    }
+    .col-count {
+      font-size: 10px;
+      background: var(--border-light);
+      padding: 1px 5px;
+      border-radius: 10px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+    .col-actions {
+      display: none;
+      gap: 4px;
+      margin-left: 6px;
+    }
+    .col-header:hover .col-actions {
+      display: flex;
+    }
+
+    .col-req-list {
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .tree-req-item, .history-item {
+      padding: 5px 8px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.12s;
+      border: 1px solid transparent;
+    }
+    .tree-req-item:hover, .history-item:hover {
+      background: var(--bg-hover);
+    }
+    .tree-req-item.active, .history-item.active {
+      background: var(--bg-selected);
+      border-color: var(--primary);
+    }
+
+    /* ─── HTTP Method 徽章（严格与 Python themes.py 保持一致） ────── */
+    .method-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+    }
+    .method-GET { background: #dcfce7; color: #15803d; }
+    .method-POST { background: #fef3c7; color: #b45309; }
+    .method-PUT { background: #dbeafe; color: #1d4ed8; }
+    .method-PATCH { background: #f3e8ff; color: #6d28d9; }
+    .method-DELETE { background: #fee2e2; color: #b91c1c; }
+    .method-HEAD { background: #f1f5f9; color: #475569; }
+    .method-OPTIONS { background: #cffafe; color: #0e7490; }
+
+    /* ─── 右侧内容区域 ─────────────────────────────────────────── */
+    .main-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-primary);
+    }
+
+    /* 模块切换导航条 (调试 / 压测 / 嗅探) */
+    .module-switcher-bar {
+      height: 38px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+    }
+    .mod-tab {
+      padding: 6px 14px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .mod-tab:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    .mod-tab.active {
+      background: var(--bg-primary);
+      border-color: var(--border-color);
+      color: var(--primary);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .view-container {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .view-container.active {
+      display: flex;
+    }
+
+    /* ─── 模块 1: API 调试主面板 ────────────────────────────────── */
+    .request-name-bar {
+      padding: 6px 16px;
+      background: var(--bg-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .req-name-input {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-name);
+      border: 1px solid transparent;
+      background: transparent;
+      padding: 4px 6px;
+      border-radius: 4px;
+      outline: none;
+      flex: 1;
+    }
+    .req-name-input:focus {
+      background: var(--bg-secondary);
+      border-color: var(--border-focus);
+    }
+
+    .url-toolbar {
+      padding: 8px 16px;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .method-select {
+      padding: 7px 12px;
+      border-radius: 5px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      font-family: var(--font-mono);
+    }
+    .url-input-box {
+      flex: 1;
+      padding: 7px 12px;
+      border-radius: 5px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      outline: none;
+      transition: border 0.15s;
+    }
+    .url-input-box:focus {
+      border-color: var(--border-focus);
+    }
+    .btn-send {
+      padding: 7px 22px;
+      border-radius: 5px;
+      border: none;
+      background: var(--send-btn);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn-send:hover {
+      background: var(--send-btn-hover);
+    }
+    .btn-send:active {
+      background: var(--send-btn-pressed);
+    }
+    .btn-save {
+      padding: 7px 14px;
+      border-radius: 5px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-save:hover {
+      background: var(--bg-hover);
+    }
+
+    /* 左右分栏 (请求配置 vs 响应大盘) */
+    .editor-panes {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+    .pane-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-primary);
+    }
+    .pane-column:first-child {
+      border-right: 1px solid var(--border-color);
+    }
+    .pane-header-tabs {
+      height: 36px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 4px;
+    }
+    .tab-pill {
+      padding: 5px 12px;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.12s;
+    }
+    .tab-pill.active {
+      background: var(--bg-primary);
+      color: var(--primary);
+      font-weight: 700;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    .pane-body-scroll {
+      flex: 1;
+      padding: 12px 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 键值对表格 (Params, Headers, Cookies) */
+    .kv-grid-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8px;
+    }
+    .kv-grid-table th {
+      padding: 6px 8px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      text-align: left;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .kv-grid-table td {
+      padding: 4px 6px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .kv-text-input {
+      width: 100%;
+      padding: 5px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      outline: none;
+    }
+    .kv-text-input:focus {
+      border-color: var(--border-focus);
+    }
+
+    .code-textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 200px;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-code);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      outline: none;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    /* ─── 响应结果状态头 ───────────────────────────────────────── */
+    .res-meta-group {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-code-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+    }
+    .pill-2xx { background: #dcfce7; color: var(--status-success); }
+    .pill-4xx { background: #fee2e2; color: var(--status-error); }
+    .pill-5xx { background: #fef2f2; color: #991b1b; }
+
+    /* ─── 网络耗时瀑布流 (Feature 3) ───────────────────────────── */
+    .waterfall-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .waterfall-progress {
+      display: flex;
+      height: 14px;
+      border-radius: 7px;
+      overflow: hidden;
+      margin: 10px 0;
+      background: var(--border-light);
+    }
+    .wf-seg { height: 100%; transition: width 0.3s; }
+    .wf-dns { background: #3b82f6; }
+    .wf-tcp { background: #8b5cf6; }
+    .wf-tls { background: #ec4899; }
+    .wf-send { background: #06b6d4; }
+    .wf-ttfb { background: #10b981; }
+    .wf-down { background: #f59e0b; }
+
+    .wf-legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .legend-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-dot-icon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* ─── 模块 2: 极简并发压测面板 (Feature 1) ────────────────────── */
+    .stress-scroll-view {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .card-box {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .card-grid-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .metric-item {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px;
+    }
+    .metric-caption {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+    .metric-number {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-top: 4px;
+    }
+
+    /* ─── 模块 3: 页面接口嗅探巡检面板 (Feature 2) ────────────────── */
+    .sniffer-scroll-view {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    /* ─── 底部系统状态栏 (QStatusBar 风格) ───────────────────────── */
+    .status-bar {
+      height: 24px;
+      background: var(--statusbar-bg);
+      color: var(--statusbar-text);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 11px;
+      flex-shrink: 0;
+      justify-content: space-between;
+    }
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* ─── 通用弹窗 (Modal) ──────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      backdrop-filter: blur(2px);
+    }
+    .modal-backdrop.active {
+      display: flex;
+    }
+    .modal-window {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      width: 620px;
+      max-width: 90vw;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+    }
+    .modal-win-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 13px;
+      background: var(--bg-secondary);
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+    }
+    .modal-win-body {
+      padding: 16px 18px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .modal-win-footer {
+      padding: 10px 18px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: var(--bg-secondary);
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+    }
+  </style>
+</head>
+<body data-theme="light">
+
+  <!-- ─── 1. 顶部菜单栏 (QMenuBar 风格) ────────────────────────── -->
+  <nav class="menu-bar">
+    <div class="app-brand">
+      <span>⚡ PostManage</span>
+      <span class="app-brand-badge">v2.0 Go</span>
+    </div>
+
+    <!-- 文件菜单 -->
+    <div class="menu-item">
+      <span>文件 (F)</span>
+      <div class="dropdown-menu">
+        <div class="dropdown-item" id="menu-import-col"><span>📥</span> 导入集合 (Import)...</div>
+        <div class="dropdown-item" id="menu-export-col"><span>📤</span> 导出集合 (Export)...</div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" id="menu-save-req"><span>💾</span> 保存当前请求</div>
+      </div>
+    </div>
+
+    <!-- 编辑菜单 -->
+    <div class="menu-item">
+      <span>编辑 (E)</span>
+      <div class="dropdown-menu">
+        <div class="dropdown-item" id="menu-global-headers"><span>🌐</span> 全局请求头设置...</div>
+        <div class="dropdown-item" id="menu-cookies"><span>🍪</span> Cookie 管理器...</div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" id="menu-curl-import"><span>📋</span> 从 cURL 导入...</div>
+        <div class="dropdown-item" id="menu-curl-export"><span>📤</span> 导出为 cURL 命令行...</div>
+      </div>
+    </div>
+
+    <!-- 模块菜单 -->
+    <div class="menu-item">
+      <span>模块 (M)</span>
+      <div class="dropdown-menu">
+        <div class="dropdown-item nav-module-click" data-mod="view-debug"><span>🚀</span> API 调试控制台</div>
+        <div class="dropdown-item nav-module-click" data-mod="view-stress"><span>⚡</span> 极简高并发压测</div>
+        <div class="dropdown-item nav-module-click" data-mod="view-sniffer"><span>🔍</span> 页面接口智能嗅探</div>
+      </div>
+    </div>
+
+    <!-- 视图菜单 -->
+    <div class="menu-item">
+      <span>视图 (V)</span>
+      <div class="dropdown-menu">
+        <div class="dropdown-item" id="menu-toggle-theme"><span>🌓</span> 切换主题 (亮色/暗色)</div>
+        <div class="dropdown-item" id="menu-lang-zh"><span>🇨🇳</span> 简体中文 (Chinese)</div>
+        <div class="dropdown-item" id="menu-lang-en"><span>🇺🇸</span> English</div>
+      </div>
+    </div>
+
+    <!-- 帮助菜单 -->
+    <div class="menu-item">
+      <span>帮助 (H)</span>
+      <div class="dropdown-menu">
+        <div class="dropdown-item" id="menu-open-help"><span>📖</span> 使用说明书与架构设计</div>
+        <div class="dropdown-item" id="menu-open-about"><span>ℹ️</span> 关于 PostManage</div>
+      </div>
+    </div>
+
+    <!-- 顶部右侧快捷按钮 -->
+    <div class="top-quick-actions">
+      <button class="btn-quick" id="btn-quick-theme" title="切换亮色/暗色护眼主题">🌓 <span id="lbl-theme-text">暗色</span></button>
+      <button class="btn-quick" id="btn-quick-lang" title="切换语言">🌐 <span id="lbl-lang-text">EN</span></button>
+      <button class="btn-quick" id="btn-quick-headers" title="配置全局请求头">🌐 全局请求头</button>
+      <button class="btn-quick" id="btn-quick-cookies" title="打开 Cookie 管理器">🍪 Cookies</button>
+    </div>
+  </nav>
+
+  <!-- 主工作区 -->
+  <div class="app-body">
+    <!-- 侧边栏：集合树与历史记录 -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-pane="pane-collections" data-i18n="collections">集合</button>
+        <button class="sidebar-tab" data-pane="pane-history" data-i18n="history">历史记录</button>
+      </div>
+
+      <!-- 集合树面板 -->
+      <div class="sidebar-pane active" id="pane-collections">
+        <div class="sidebar-actions">
+          <button class="btn-quick" id="btn-new-req"><span>➕</span> 新建请求</button>
+          <button class="btn-quick" id="btn-new-folder"><span>📁</span> 新建分组</button>
+          <button class="btn-quick" id="btn-import-curl-quick"><span>📥</span> 导入 cURL</button>
+        </div>
+        <div class="tree-container" id="collections-tree-root">
+          <!-- 动态渲染集合树节点 -->
+        </div>
+      </div>
+
+      <!-- 历史记录面板 -->
+      <div class="sidebar-pane" id="pane-history">
+        <div class="sidebar-actions">
+          <button class="btn-quick" id="btn-clear-history" style="width: 100%;"><span>🗑️</span> 清空历史记录</button>
+        </div>
+        <div class="tree-container" id="history-list-root">
+          <!-- 动态渲染历史记录列表 -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主工作内容面板 -->
+    <main class="main-panel">
+      <!-- 模块导航标签条 -->
+      <div class="module-switcher-bar">
+        <button class="mod-tab active" data-mod="view-debug">
+          <span>🚀</span> <span data-i18n="nav_debug">API 接口调试</span>
+        </button>
+        <button class="mod-tab" data-mod="view-stress">
+          <span>⚡</span> <span data-i18n="nav_stress">极简高并发压测</span>
+        </button>
+        <button class="mod-tab" data-mod="view-sniffer">
+          <span>🔍</span> <span data-i18n="nav_sniffer">页面接口智能嗅探</span>
+        </button>
+      </div>
+
+      <!-- ─── 模块 1: 接口调试面板 ──────────────────────────────── -->
+      <section class="view-container active" id="view-debug">
+        <!-- 请求名称 (蓝调文字，表示可编辑，对标 Python text_name) -->
+        <div class="request-name-bar">
+          <span style="font-size: 12px; color: var(--text-secondary);">请求名称:</span>
+          <input type="text" class="req-name-input" id="curr-req-name" value="新建请求" placeholder="输入接口描述名称...">
+        </div>
+
+        <!-- URL 工具栏 -->
+        <div class="url-toolbar">
+          <select class="method-select" id="curr-req-method">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+            <option value="PATCH">PATCH</option>
+            <option value="HEAD">HEAD</option>
+            <option value="OPTIONS">OPTIONS</option>
+          </select>
+          <input type="text" class="url-input-box" id="curr-req-url" placeholder="https://httpbin.org/get" value="https://httpbin.org/get">
+          <button class="btn-send" id="btn-send-request">
+            <span>▶</span> <span data-i18n="send">发送</span>
+          </button>
+          <button class="btn-save" id="btn-save-request">
+            <span>💾</span> <span data-i18n="save">保存</span>
+          </button>
+        </div>
+
+        <!-- 请求与响应左右分栏 -->
+        <div class="editor-panes">
+          <!-- 左栏：请求参数编辑器 -->
+          <div class="pane-column">
+            <div class="pane-header-tabs">
+              <button class="tab-pill active" data-subpane="req-sub-params">Params</button>
+              <button class="tab-pill" data-subpane="req-sub-headers">Headers</button>
+              <button class="tab-pill" data-subpane="req-sub-body">Body</button>
+              <button class="tab-pill" data-subpane="req-sub-auth">Auth</button>
+              <button class="tab-pill" data-subpane="req-sub-cookies">Cookies</button>
+            </div>
+            <div class="pane-body-scroll">
+              <!-- Params Tab -->
+              <div id="req-sub-params" class="subpane-box">
+                <table class="kv-grid-table" id="table-params">
+                  <thead><tr><th width="30"></th><th>Key</th><th>Value</th><th width="30"></th></tr></thead>
+                  <tbody></tbody>
+                </table>
+                <button class="btn-quick" id="btn-add-param-row">+ 添加参数 (Query Param)</button>
+              </div>
+
+              <!-- Headers Tab -->
+              <div id="req-sub-headers" class="subpane-box" style="display: none;">
+                <table class="kv-grid-table" id="table-headers">
+                  <thead><tr><th width="30"></th><th>Header Key</th><th>Value</th><th width="30"></th></tr></thead>
+                  <tbody></tbody>
+                </table>
+                <button class="btn-quick" id="btn-add-header-row">+ 添加请求头 (Header)</button>
+              </div>
+
+              <!-- Body Tab -->
+              <div id="req-sub-body" class="subpane-box" style="display: none; height: 100%; flex-direction: column;">
+                <div style="margin-bottom: 8px; display: flex; gap: 14px; align-items: center;">
+                  <label><input type="radio" name="radio-body-type" value="none"> none</label>
+                  <label><input type="radio" name="radio-body-type" value="json" checked> json</label>
+                  <label><input type="radio" name="radio-body-type" value="form"> form-data</label>
+                  <label><input type="radio" name="radio-body-type" value="urlencoded"> x-www-form-urlencoded</label>
+                  <label><input type="radio" name="radio-body-type" value="raw"> raw</label>
+                </div>
+                <textarea class="code-textarea" id="curr-req-body" placeholder="{\n  \"key\": \"value\"\n}"></textarea>
+              </div>
+
+              <!-- Auth Tab -->
+              <div id="req-sub-auth" class="subpane-box" style="display: none;">
+                <div style="margin-bottom: 12px;">
+                  <label style="font-size: 11px; color: var(--text-secondary);">认证类型:</label>
+                  <select id="curr-auth-type" class="method-select" style="margin-left: 8px; padding: 4px 8px;">
+                    <option value="none">No Auth</option>
+                    <option value="bearer">Bearer Token</option>
+                    <option value="basic">Basic Auth</option>
+                    <option value="apikey">API Key</option>
+                  </select>
+                </div>
+                <div id="box-auth-bearer" style="display: none;">
+                  <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Token:</label>
+                  <input type="text" id="auth-token" class="kv-text-input" placeholder="Bearer Token...">
+                </div>
+                <div id="box-auth-basic" style="display: none;">
+                  <div style="display: flex; gap: 8px;">
+                    <input type="text" id="auth-username" class="kv-text-input" placeholder="Username">
+                    <input type="password" id="auth-password" class="kv-text-input" placeholder="Password">
+                  </div>
+                </div>
+                <div id="box-auth-apikey" style="display: none;">
+                  <div style="display: flex; gap: 8px;">
+                    <input type="text" id="auth-key" class="kv-text-input" placeholder="Header Key (e.g. X-API-KEY)">
+                    <input type="text" id="auth-val" class="kv-text-input" placeholder="Key Value">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cookies Tab -->
+              <div id="req-sub-cookies" class="subpane-box" style="display: none;">
+                <table class="kv-grid-table" id="table-cookies">
+                  <thead><tr><th width="30"></th><th>Cookie Name</th><th>Value</th><th width="30"></th></tr></thead>
+                  <tbody></tbody>
+                </table>
+                <button class="btn-quick" id="btn-add-cookie-row">+ 添加 Cookie</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右栏：响应结果与瀑布流 -->
+          <div class="pane-column">
+            <div class="pane-header-tabs">
+              <button class="tab-pill active" data-subpane="res-sub-body">响应体 (Body)</button>
+              <button class="tab-pill" data-subpane="res-sub-timing">耗时瀑布流 (Timing)</button>
+              <button class="tab-pill" data-subpane="res-sub-headers">响应头 (Headers)</button>
+              <!-- 响应状态码、耗时、大小徽章 -->
+              <div class="res-meta-group">
+                <span id="res-status-badge" class="status-code-pill" style="display: none;"></span>
+                <span id="res-time-text" style="color: var(--text-secondary); font-size: 11px;"></span>
+                <span id="res-size-text" style="color: var(--text-secondary); font-size: 11px;"></span>
+              </div>
+            </div>
+            <div class="pane-body-scroll">
+              <!-- 响应体 -->
+              <div id="res-sub-body" class="subpane-box" style="height: 100%; display: flex; flex-direction: column;">
+                <textarea class="code-textarea" id="res-body-textarea" readonly placeholder="点击上方绿色的“发送”按钮以查看服务器响应结果..."></textarea>
+              </div>
+
+              <!-- 耗时瀑布流 (Feature 3) -->
+              <div id="res-sub-timing" class="subpane-box" style="display: none;">
+                <div class="waterfall-container">
+                  <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 12px;">
+                    <span>全链路网络耗时拆解瀑布流</span>
+                    <span id="wf-total-ms">0.00 ms</span>
+                  </div>
+                  <div class="waterfall-progress">
+                    <div id="wf-bar-dns" class="wf-seg wf-dns" title="DNS 解析" style="width: 0%;"></div>
+                    <div id="wf-bar-tcp" class="wf-seg wf-tcp" title="TCP 建连" style="width: 0%;"></div>
+                    <div id="wf-bar-tls" class="wf-seg wf-tls" title="TLS 握手" style="width: 0%;"></div>
+                    <div id="wf-bar-send" class="wf-seg wf-send" title="请求发送" style="width: 0%;"></div>
+                    <div id="wf-bar-ttfb" class="wf-seg wf-ttfb" title="首包到达 (TTFB)" style="width: 0%;"></div>
+                    <div id="wf-bar-down" class="wf-seg wf-down" title="内容下载" style="width: 0%;"></div>
+                  </div>
+
+                  <div class="wf-legend-grid">
+                    <div class="legend-cell"><div class="legend-dot-icon wf-dns"></div><span>DNS: <strong id="val-wf-dns">0ms</strong></span></div>
+                    <div class="legend-cell"><div class="legend-dot-icon wf-tcp"></div><span>TCP: <strong id="val-wf-tcp">0ms</strong></span></div>
+                    <div class="legend-cell"><div class="legend-dot-icon wf-tls"></div><span>TLS: <strong id="val-wf-tls">0ms</strong></span></div>
+                    <div class="legend-cell"><div class="legend-dot-icon wf-send"></div><span>Send: <strong id="val-wf-send">0ms</strong></span></div>
+                    <div class="legend-cell"><div class="legend-dot-icon wf-ttfb"></div><span>TTFB: <strong id="val-wf-ttfb">0ms</strong></span></div>
+                    <div class="legend-cell"><div class="legend-dot-icon wf-down"></div><span>Download: <strong id="val-wf-down">0ms</strong></span></div>
+                  </div>
+                </div>
+
+                <table class="kv-grid-table">
+                  <thead><tr><th>阶段 (Network Phase)</th><th>耗时 (Time)</th><th>占比 (Percentage)</th></tr></thead>
+                  <tbody>
+                    <tr><td>DNS Lookup (域名解析)</td><td id="row-dns-ms">-</td><td id="row-dns-pct">-</td></tr>
+                    <tr><td>TCP Connect (三次握手)</td><td id="row-tcp-ms">-</td><td id="row-tcp-pct">-</td></tr>
+                    <tr><td>TLS Handshake (安全加密)</td><td id="row-tls-ms">-</td><td id="row-tls-pct">-</td></tr>
+                    <tr><td>Request Send (写入发送)</td><td id="row-send-ms">-</td><td id="row-send-pct">-</td></tr>
+                    <tr><td>Waiting (TTFB 首包到达)</td><td id="row-ttfb-ms">-</td><td id="row-ttfb-pct">-</td></tr>
+                    <tr><td>Content Download (响应下载)</td><td id="row-down-ms">-</td><td id="row-down-pct">-</td></tr>
+                    <tr style="font-weight: 700;"><td>Total Lifecycle (网络全生命周期)</td><td id="row-total-ms">-</td><td>100.0%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- 响应头 -->
+              <div id="res-sub-headers" class="subpane-box" style="display: none;">
+                <table class="kv-grid-table" id="res-headers-table">
+                  <thead><tr><th>Header</th><th>Value</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 模块 2: 极简高并发压测面板 (Feature 1) ──────────────── -->
+      <section class="view-container" id="view-stress">
+        <div class="stress-scroll-view">
+          <div class="card-box">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h3 style="font-size: 15px; font-weight: 700;">⚡ 极简并发压测引擎 (Go 协程并发引擎)</h3>
+                <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">针对当前请求面板中的接口直接发起并发压力测试，自动计算真实 TPS、P50/P90/P99 延迟分位数并输出智能性能瓶颈调优建议。</p>
+              </div>
+              <button class="btn-send" id="btn-run-stress" style="padding: 10px 24px;">
+                <span>⚡</span> <span>开始压测</span>
+              </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 14px;">
+              <div>
+                <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">并发用户数 (Concurrency)</label>
+                <input type="number" id="stress-concurrency" class="kv-text-input" value="20" min="1" max="200">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">持续时间 (Duration s)</label>
+                <input type="number" id="stress-duration" class="kv-text-input" value="10" min="1" max="300">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">爬坡加压 (Ramp-up s)</label>
+                <input type="number" id="stress-rampup" class="kv-text-input" value="2" min="0" max="60">
+              </div>
+              <div>
+                <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">请求间隔 (Delay ms)</label>
+                <input type="number" id="stress-delay" class="kv-text-input" value="0" min="0" max="5000">
+              </div>
+            </div>
+          </div>
+
+          <!-- 压测大盘指标卡片 -->
+          <div class="card-grid-metrics">
+            <div class="metric-item">
+              <div class="metric-caption">总请求数 / 成功率</div>
+              <div class="metric-number" id="metric-st-total">0</div>
+              <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;" id="metric-st-rate">成功率: 0.0%</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-caption">平均 TPS (吞吐量)</div>
+              <div class="metric-number" id="metric-st-tps" style="color: var(--primary);">0.0</div>
+              <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;" id="metric-st-peak-tps">峰值 TPS: 0.0</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-caption">延迟分位数 (P90)</div>
+              <div class="metric-number" id="metric-st-p90">0 ms</div>
+              <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;" id="metric-st-p-detail">P50: 0ms | P99: 0ms</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-caption">平均耗时 / 网络带宽</div>
+              <div class="metric-number" id="metric-st-rt">0 ms</div>
+              <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;" id="metric-st-bandwidth">带宽: 0 KB/s</div>
+            </div>
+          </div>
+
+          <!-- 耗时区间与状态码分布 -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="card-box">
+              <h4 style="font-size: 13px; margin-bottom: 10px;">耗时区间分布 (Latency Distribution)</h4>
+              <table class="kv-grid-table">
+                <thead><tr><th>延迟区间</th><th>请求数量</th></tr></thead>
+                <tbody>
+                  <tr><td>&lt; 50 ms (优)</td><td id="st-bin-50">0</td></tr>
+                  <tr><td>50 ~ 200 ms (良)</td><td id="st-bin-200">0</td></tr>
+                  <tr><td>200 ~ 500 ms (中)</td><td id="st-bin-500">0</td></tr>
+                  <tr><td>&gt; 500 ms (慢)</td><td id="st-bin-more">0</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card-box">
+              <h4 style="font-size: 13px; margin-bottom: 10px;">HTTP 状态码分布 (Status Codes)</h4>
+              <div id="st-status-pills" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                <span class="status-code-pill pill-2xx">200 OK: 0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 智能瓶颈诊断与建议 -->
+          <div class="card-box">
+            <h4 style="font-size: 13px;">🤖 智能瓶颈诊断与优化建议 (Smart Bottleneck Diagnosis)</h4>
+            <div id="stress-diag-box" style="margin-top: 10px; padding: 12px; border-radius: 6px; background: var(--bg-selected); color: var(--primary); font-size: 12px; line-height: 1.6;">
+              执行压测后，系统将自动分析吞吐量瓶颈、网络建连消耗与服务端长尾排队原因，并给出调优建议。
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 模块 3: 页面接口嗅探与巡检面板 (Feature 2) ─────────── -->
+      <section class="view-container" id="view-sniffer">
+        <div class="sniffer-scroll-view">
+          <div class="card-box">
+            <h3 style="font-size: 15px; font-weight: 700;">🔍 页面接口智能嗅探与健康巡检</h3>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">输入任意 Web 页面 URL，自动解析 HTML 及关联 JS 脚本中调用的所有后端 RESTful/AJAX 接口，并并发巡检其健康状态。</p>
+
+            <div style="display: flex; gap: 8px; margin-top: 14px;">
+              <input type="text" id="sniff-input-url" class="url-input-box" placeholder="https://example.com" value="https://example.com">
+              <button class="btn-send" id="btn-run-sniffer" style="padding: 8px 20px;">
+                <span>🔍</span> <span>一键嗅探并巡检</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 嗅探大盘指标卡片 -->
+          <div class="card-grid-metrics">
+            <div class="metric-item">
+              <div class="metric-caption">嗅探到接口总数</div>
+              <div class="metric-number" id="sniff-card-total">0</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-caption">健康正常接口 (2xx)</div>
+              <div class="metric-number" id="sniff-card-healthy" style="color: var(--status-success);">0</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-caption">潜在异常接口 (4xx/慢)</div>
+              <div class="metric-number" id="sniff-card-warning" style="color: var(--status-redirect);">0</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-caption">严重错误接口 (5xx/离线)</div>
+              <div class="metric-number" id="sniff-card-critical" style="color: var(--status-error);">0</div>
+            </div>
+          </div>
+
+          <!-- 接口巡检列表 -->
+          <div class="card-box">
+            <h4 style="font-size: 13px; margin-bottom: 10px;">接口巡检详情大盘</h4>
+            <table class="kv-grid-table" id="table-sniffer-results">
+              <thead>
+                <tr>
+                  <th width="70">Method</th>
+                  <th>API Endpoint URL</th>
+                  <th width="100">健康状态</th>
+                  <th width="80">状态码</th>
+                  <th width="80">耗时 (ms)</th>
+                  <th width="150">联动操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">点击“一键嗅探并巡检”开始扫描分析</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ─── 3. 底部状态栏 (QStatusBar 风格) ───────────────────────── -->
+  <footer class="status-bar">
+    <div class="status-left">
+      <span>● 就绪</span>
+      <span style="opacity: 0.7;">|</span>
+      <span id="statusbar-msg">PostManage 后台服务已就绪</span>
+    </div>
+    <div class="status-right">
+      <span>服务地址: http://127.0.0.1:8088</span>
+      <span style="opacity: 0.7;">|</span>
+      <span id="statusbar-theme">主题: 亮色护眼</span>
+      <span style="opacity: 0.7;">|</span>
+      <span>PostManage v2.0 (Go High-Performance)</span>
+    </div>
+  </footer>
+
+  <!-- ─── 4. 弹窗合集 (Modals) ──────────────────────────────────── -->
+
+  <!-- 集合导入弹窗 -->
+  <div class="modal-backdrop" id="modal-import-col">
+    <div class="modal-window">
+      <div class="modal-win-header">
+        <span>📥 导入集合 (Import Collection)</span>
+        <button class="icon-btn close-modal-btn">✕</button>
+      </div>
+      <div class="modal-win-body">
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+          支持导入 <strong>PostManage JSON 格式</strong> 或 <strong>Postman Collection v2.1 格式</strong>：
+        </p>
+        <div style="margin-bottom: 10px;">
+          <input type="file" id="file-import-input" accept=".json" style="font-size: 12px;">
+        </div>
+        <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">或直接粘贴 JSON 内容:</label>
+        <textarea class="code-textarea" id="text-import-json" placeholder="在此粘贴集合 JSON 文本..." style="min-height: 180px;"></textarea>
+      </div>
+      <div class="modal-win-footer">
+        <button class="btn-quick close-modal-btn">取消</button>
+        <button class="btn-send" id="btn-do-import" style="padding: 5px 16px;">开始导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建集合弹窗 -->
+  <div class="modal-backdrop" id="modal-new-col">
+    <div class="modal-window" style="width: 420px;">
+      <div class="modal-win-header">
+        <span>📁 新建请求集合 (Collection)</span>
+        <button class="icon-btn close-modal-btn">✕</button>
+      </div>
+      <div class="modal-win-body">
+        <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">集合名称:</label>
+        <input type="text" id="input-new-col-name" class="kv-text-input" placeholder="例如: 用户认证中心">
+      </div>
+      <div class="modal-win-footer">
+        <button class="btn-quick close-modal-btn">取消</button>
+        <button class="btn-send" id="btn-save-new-col" style="padding: 5px 16px;">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 保存请求到集合弹窗 -->
+  <div class="modal-backdrop" id="modal-save-request">
+    <div class="modal-window" style="width: 450px;">
+      <div class="modal-win-header">
+        <span>💾 保存请求到集合</span>
+        <button class="icon-btn close-modal-btn">✕</button>
+      </div>
+      <div class="modal-win-body">
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">请求名称:</label>
+          <input type="text" id="save-req-name-input" class="kv-text-input" placeholder="请求描述名称">
+        </div>
+        <div>
+          <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">所属集合:</label>
+          <select id="save-req-col-select" class="method-select" style="width: 100%;">
+            <!-- 动态填充集合 -->
+          </select>
+        </div>
+      </div>
+      <div class="modal-win-footer">
+        <button class="btn-quick close-modal-btn">取消</button>
+        <button class="btn-send" id="btn-confirm-save-req" style="padding: 5px 16px;">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全局请求头弹窗 -->
+  <div class="modal-backdrop" id="modal-global-headers">
+    <div class="modal-window">
+      <div class="modal-win-header">
+        <span>🌐 全局请求头设置 (Global Headers)</span>
+        <button class="icon-btn close-modal-btn">✕</button>
+      </div>
+      <div class="modal-win-body">
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+          在此配置的请求头将在所有 API 请求中全局生效。若单个接口单独配置了同名 Key（不区分大小写），则<strong>以单个接口配置的 Header 为准</strong>。
+        </p>
+        <table class="kv-grid-table" id="table-global-headers">
+          <thead><tr><th width="30"></th><th>Header Key</th><th>Value</th><th width="30"></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <button class="btn-quick" id="btn-add-gh-row">+ 添加全局请求头</button>
+      </div>
+      <div class="modal-win-footer">
+        <button class="btn-quick close-modal-btn">取消</button>
+        <button class="btn-send" id="btn-save-global-headers" style="padding: 5px 16px;">保存全局请求头</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cookie 管理器弹窗 -->
+  <div class="modal-backdrop" id="modal-cookies">
+    <div class="modal-window" style="width: 680px;">
+      <div class="modal-win-header">
+        <span>🍪 Cookie 管理器 (Cookie Manager)</span>
+        <button class="icon-btn close-modal-btn">✕</button>
+      </div>
+      <div class="modal-win-body">
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+          集中查看与管理所有域名的持久化 Cookies。
+        </p>
+        <table class="kv-grid-table" id="table-cookie-manager">
+          <thead><tr><th>Domain / Path</th><th>Cookie Name</th><th>Value</th><th width="30"></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <button class="btn-quick" id="btn-add-cm-row">+ 添加持久化 Cookie</button>
+      </div>
+      <div class="modal-win-footer">
+        <button class="btn-quick close-modal-btn">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- cURL 导出弹窗 -->
+  <div class="modal-backdrop" id="modal-curl-export">
+    <div class="modal-window">
+      <div class="modal-win-header">
+        <span>📤 导出为 cURL 命令行</span>
+        <button class="icon-btn close-modal-btn">✕</button>
+      </div>
+      <div class="modal-win-body">
+        <textarea class="code-textarea" id="curl-export-area" readonly style="min-height: 220px;"></textarea>
+      </div>
+      <div class="modal-win-footer">
+        <button class="btn-quick close-modal-btn">关闭</button>
+        <button class="btn-send" id="btn-copy-curl" style="padding: 5px 16px;">复制到剪贴板</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- cURL 导入弹窗 -->
+  <div class="modal-backdrop" id="modal-curl-import">
+    <div class="modal-window">
+      <div class="modal-win-header">
+        <span>📋 从 cURL 命令导入</span>
+        <button class="icon-btn close-modal-btn">✕</button>
+      </div>
+      <div class="modal-win-body">
+        <textarea class="code-textarea" id="curl-import-area" placeholder="粘贴 curl 命令行，例如:\ncurl -X POST 'https://api.example.com/login' -H 'Content-Type: application/json' -d '{\"user\":\"admin\"}'" style="min-height: 200px;"></textarea>
+      </div>
+      <div class="modal-win-footer">
+        <button class="btn-quick close-modal-btn">取消</button>
+        <button class="btn-send" id="btn-do-curl-parse" style="padding: 5px 16px;">解析并载入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 系统设置弹窗 -->
+  <div class="modal-backdrop" id="modal-settings">
+    <div class="modal-window" style="width: 480px;">
+      <div class="modal-win-header">
+        <span>⚙️ 系统偏好设置 (Settings)</span>
+        <button class="icon-btn close-modal-btn">✕</button>
+      </div>
+      <div class="modal-win-body">
+        <div style="display:flex; flex-direction:column; gap: 14px;">
+          <div>
+            <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">界面主题 (Theme):</label>
+            <select id="settings-theme-select" class="method-select" style="width: 100%;">
+              <option value="light">浅色主题 (低饱和度护眼)</option>
+              <option value="dark">暗色主题 (Dark Mode)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">界面语言 (Language):</label>
+            <select id="settings-lang-select" class="method-select" style="width: 100%;">
+              <option value="zh">简体中文</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 4px;">默认网络超时 (毫秒):</label>
+            <input type="number" id="settings-timeout-input" class="kv-text-input" value="30000">
+          </div>
+        </div>
+      </div>
+      <div class="modal-win-footer">
+        <button class="btn-quick close-modal-btn">取消</button>
+        <button class="btn-send" id="btn-save-settings" style="padding: 5px 16px;">保存设置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 使用文档说明书弹窗 -->
+  <div class="modal-backdrop" id="modal-help">
+    <div class="modal-window" style="width: 780px;">
+      <div class="modal-win-header">
+        <span>❓ PostManage 使用说明书与架构文档</span>
+        <button class="icon-btn close-modal-btn">✕</button>
+      </div>
+      <div class="modal-win-body" style="line-height: 1.7; font-size: 12px; color: var(--text-primary);">
+        <h3 style="color: var(--primary); margin-bottom: 8px;">1. 快速入门与核心功能</h3>
+        <p>PostManage v2.0 是一款基于 Go 纯标准库打造的单二进制高性能 API 调试与压测平台。支持完整的 REST 接口测试、全链路网络耗时瀑布流拆解、高并发性能压测与页面接口智能嗅探。</p>
+
+        <h4 style="margin-top: 12px; color: var(--primary);">2. 全链路网络耗时拆解 (Waterfall)</h4>
+        <p>基于 Go 底层 <code>net/http/httptrace</code> 纳米级精确测量每次请求在 DNS 查询、TCP 握手、TLS 密钥交换、请求发送、等待首包 (TTFB) 及内容下载等全流程的耗时与百分比。</p>
+
+        <h4 style="margin-top: 12px; color: var(--primary);">3. 极简高并发性能压测</h4>
+        <p>摆脱 Python GIL 限制，依靠 Go 原生协程池单机轻松支撑万级高并发。秒级滑动统计平均 TPS 与峰值 TPS，精准计算 P50/P90/P99 延迟分位数并给出性能瓶颈诊断。</p>
+
+        <h4 style="margin-top: 12px; color: var(--primary);">4. 页面接口智能嗅探与健康巡检</h4>
+        <p>输入任意 Web 页面 URL，自动获取 HTML 源码及关联外链 JS 脚本，多引擎正则并行挖掘接口路径并并发发起探测，以红黄绿大盘呈现健康状态。</p>
+
+        <h4 style="margin-top: 12px; color: var(--primary);">5. 全局请求头与优先级覆盖</h4>
+        <p>全局请求头在所有请求中生效。若单个请求单独配置了同名 Key（不区分大小写），则以单个请求的配置优先覆盖！</p>
+      </div>
+      <div class="modal-win-footer">
+        <button class="btn-quick close-modal-btn">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 关于弹窗 -->
+  <div class="modal-backdrop" id="modal-about">
+    <div class="modal-window" style="width: 420px;">
+      <div class="modal-win-header">
+        <span>ℹ️ 关于 PostManage</span>
+        <button class="icon-btn close-modal-btn">✕</button>
+      </div>
+      <div class="modal-win-body" style="text-align: center; padding: 24px;">
+        <h2 style="color: var(--primary); margin-bottom: 6px;">PostManage v2.0</h2>
+        <p style="font-size: 12px; color: var(--text-secondary);">企业级高性能 API 调试与高并发压测平台</p>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 14px;">纯 Go 原生编译 · Zero CGO · 内嵌 Edge WebView2 运行时</p>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">License: MIT License</p>
+      </div>
+      <div class="modal-win-footer">
+        <button class="btn-quick close-modal-btn">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 5. 交互脚本逻辑 ───────────────────────────────────────── -->
+  <script>
+    // ─── 国际化字典 (i18n) ───
+    const I18N = {
+      zh: {
+        collections: "集合",
+        history: "历史记录",
+        collections_title: "请求集合树",
+        history_title: "最近 500 条记录",
+        nav_debug: "API 接口调试",
+        nav_stress: "极简高并发压测",
+        nav_sniffer: "页面接口智能嗅探",
+        send: "发送",
+        save: "保存",
+      },
+      en: {
+        collections: "Collections",
+        history: "History",
+        collections_title: "Collection Tree",
+        history_title: "Recent 500 Records",
+        nav_debug: "API Debugger",
+        nav_stress: "Stress Test (Go Engine)",
+        nav_sniffer: "Page API Sniffer & Inspector",
+        send: "Send",
+        save: "Save",
+      }
+    };
+    let currentLang = "zh";
+
+    function updateLanguage(lang) {
+      currentLang = lang;
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        if (I18N[lang][key]) el.textContent = I18N[lang][key];
+      });
+      document.getElementById("lbl-lang-text").textContent = lang === "zh" ? "EN" : "中";
+    }
+
+    // ─── 主题切换逻辑 ───
+    function setTheme(theme) {
+      document.body.setAttribute("data-theme", theme);
+      document.getElementById("lbl-theme-text").textContent = theme === "dark" ? "亮色" : "暗色";
+      document.getElementById("statusbar-theme").textContent = `主题: ${theme === "dark" ? "暗色模式" : "亮色护眼"}`;
+    }
+
+    document.getElementById("btn-quick-theme").addEventListener("click", () => {
+      const isDark = document.body.getAttribute("data-theme") === "dark";
+      setTheme(isDark ? "light" : "dark");
+    });
+    document.getElementById("menu-toggle-theme").addEventListener("click", () => {
+      const isDark = document.body.getAttribute("data-theme") === "dark";
+      setTheme(isDark ? "light" : "dark");
+    });
+
+    document.getElementById("btn-quick-lang").addEventListener("click", () => {
+      updateLanguage(currentLang === "zh" ? "en" : "zh");
+    });
+    document.getElementById("menu-toggle-lang").addEventListener("click", () => {
+      updateLanguage(currentLang === "zh" ? "en" : "zh");
+    });
+
+    // ─── 模块导航切换 ───
+    document.querySelectorAll(".mod-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".mod-tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".view-container").forEach(v => v.classList.remove("active"));
+        tab.classList.add("active");
+        const targetId = tab.getAttribute("data-mod");
+        document.getElementById(targetId).classList.add("active");
+      });
+    });
+
+    document.querySelectorAll(".nav-module-click").forEach(item => {
+      item.addEventListener("click", () => {
+        const modId = item.getAttribute("data-mod");
+        const btn = document.querySelector(`.mod-tab[data-mod='${modId}']`);
+        if (btn) btn.click();
+      });
+    });
+
+    // ─── 左侧面板标签切换 ───
+    document.querySelectorAll(".left-tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".left-tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".left-tab-content").forEach(c => c.style.display = "none");
+        btn.classList.add("active");
+        document.getElementById(btn.getAttribute("data-tab")).style.display = "flex";
+      });
+    });
+
+    // ─── 子面板标签切换 (请求 / 响应) ───
+    document.querySelectorAll(".pane-header-tabs").forEach(header => {
+      header.addEventListener("click", e => {
+        const pill = e.target.closest(".tab-pill");
+        if (!pill) return;
+        const parentCol = pill.closest(".pane-column");
+        parentCol.querySelectorAll(".tab-pill").forEach(p => p.classList.remove("active"));
+        parentCol.querySelectorAll(".subpane-box").forEach(b => b.style.display = "none");
+        pill.classList.add("active");
+        const subId = pill.getAttribute("data-subpane");
+        const targetBox = parentCol.querySelector("#" + subId);
+        if (targetBox) {
+          targetBox.style.display = subId === "req-sub-body" || subId === "res-sub-body" ? "flex" : "block";
+        }
+      });
+    });
+
+    // ─── 表格增删行通用辅助 ───
+    function addTableRow(tableId, key = "", value = "", enabled = true) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input type="checkbox" ${enabled ? "checked" : ""}></td>
+        <td><input type="text" class="kv-text-input" value="${escapeHtml(key)}" placeholder="Key"></td>
+        <td><input type="text" class="kv-text-input" value="${escapeHtml(value)}" placeholder="Value"></td>
+        <td><button class="icon-btn del-row-btn" style="width:20px;height:20px;">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+      tr.querySelector(".del-row-btn").addEventListener("click", () => tr.remove());
+    }
+
+    function getTableData(tableId) {
+      const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+      const list = [];
+      rows.forEach(tr => {
+        const enabled = tr.querySelector("input[type=checkbox]").checked;
+        const inputs = tr.querySelectorAll(".kv-text-input");
+        const key = inputs[0].value.trim();
+        const value = inputs[1].value;
+        if (key) {
+          list.push({ key, value, enabled });
+        }
+      });
+      return list;
+    }
+
+    function escapeHtml(str) {
+      return (str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    document.getElementById("btn-add-param-row").addEventListener("click", () => addTableRow("table-params"));
+    document.getElementById("btn-add-header-row").addEventListener("click", () => addTableRow("table-headers"));
+    document.getElementById("btn-add-cookie-row").addEventListener("click", () => addTableRow("table-cookies"));
+    document.getElementById("btn-add-gh-row").addEventListener("click", () => addTableRow("table-global-headers"));
+
+    // ─── 认证选择器切换 ───
+    const authSelect = document.getElementById("curr-auth-type");
+    authSelect.addEventListener("change", () => {
+      const val = authSelect.value;
+      document.getElementById("box-auth-bearer").style.display = val === "bearer" ? "block" : "none";
+      document.getElementById("box-auth-basic").style.display = val === "basic" ? "block" : "none";
+      document.getElementById("box-auth-apikey").style.display = val === "apikey" ? "block" : "none";
+    });
+
+    // ─── 组装当前请求对象 ───
+    function buildCurrentRequest() {
+      const name = document.getElementById("curr-req-name").value.trim() || "未命名请求";
+      const method = document.getElementById("curr-req-method").value;
+      const url = document.getElementById("curr-req-url").value.trim();
+      const params = getTableData("table-params");
+      const headers = getTableData("table-headers");
+      const cookies = getTableData("table-cookies");
+      const bodyType = document.querySelector("input[name='radio-body-type']:checked").value;
+      const bodyContent = document.getElementById("curr-req-body").value;
+      const authType = authSelect.value;
+      const authConfig = {};
+
+      if (authType === "bearer") {
+        authConfig["token"] = document.getElementById("auth-token").value;
+      } else if (authType === "basic") {
+        authConfig["username"] = document.getElementById("auth-username").value;
+        authConfig["password"] = document.getElementById("auth-password").value;
+      } else if (authType === "apikey") {
+        authConfig["key"] = document.getElementById("auth-key").value;
+        authConfig["value"] = document.getElementById("auth-val").value;
+      }
+
+      return {
+        id: "req_" + Date.now(),
+        name,
+        method,
+        url,
+        params,
+        headers,
+        cookies,
+        body_type: bodyType,
+        body_content: bodyContent,
+        auth_type: authType,
+        auth_config: authConfig
+      };
+    }
+
+    // ─── 发送请求并渲染响应与耗时瀑布流 (Feature 3) ───
+    const btnSend = document.getElementById("btn-send-request");
+    btnSend.addEventListener("click", async () => {
+      const reqData = buildCurrentRequest();
+      if (!reqData.url) {
+        alert("请输入有效的请求 URL");
+        return;
+      }
+
+      btnSend.disabled = true;
+      btnSend.innerHTML = "<span>⏳</span> 发送中...";
+      document.getElementById("statusbar-msg").textContent = `正在发送请求到 ${reqData.url}...`;
+
+      try {
+        const res = await fetch("/api/request/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reqData)
+        });
+        const data = await res.json();
+        renderResponse(data);
+        loadHistory();
+        document.getElementById("statusbar-msg").textContent = `请求完成: ${data.status_code || 200} OK (${(data.elapsed_ms || 0).toFixed(1)}ms)`;
+      } catch (err) {
+        alert("请求发送失败: " + err.message);
+        document.getElementById("statusbar-msg").textContent = `请求发送失败: ${err.message}`;
+      } finally {
+        btnSend.disabled = false;
+        btnSend.innerHTML = `<span>▶</span> <span>${currentLang === "zh" ? "发送" : "Send"}</span>`;
+      }
+    });
+
+    function renderResponse(data) {
+      // 状态码
+      const badge = document.getElementById("res-status-badge");
+      badge.style.display = "inline-block";
+      const code = data.status_code || 0;
+      badge.textContent = `${code} ${data.reason || ""}`;
+      badge.className = `status-code-pill ${code >= 200 && code < 300 ? "pill-2xx" : code >= 500 ? "pill-5xx" : "pill-4xx"}`;
+
+      document.getElementById("res-time-text").textContent = `${(data.elapsed_ms || 0).toFixed(1)} ms`;
+      document.getElementById("res-size-text").textContent = data.size_text || `${data.size_bytes || 0} B`;
+
+      // 响应体美化
+      const resTextarea = document.getElementById("res-body-textarea");
+      try {
+        const obj = JSON.parse(data.body);
+        resTextarea.value = JSON.stringify(obj, null, 2);
+      } catch {
+        resTextarea.value = data.body || "";
+      }
+
+      // 响应头
+      const hTbody = document.querySelector("#res-headers-table tbody");
+      hTbody.innerHTML = "";
+      if (data.headers) {
+        for (const [k, v] of Object.entries(data.headers)) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td style="font-weight:600;">${escapeHtml(k)}</td><td>${escapeHtml(v)}</td>`;
+          hTbody.appendChild(tr);
+        }
+      }
+
+      // 耗时瀑布流 (Feature 3)
+      if (data.timing) {
+        const t = data.timing;
+        const total = t.total_ms || 1;
+        document.getElementById("wf-total-ms").textContent = `${t.total_ms.toFixed(2)} ms`;
+
+        const pct = ms => ((ms / total) * 100).toFixed(1);
+
+        document.getElementById("wf-bar-dns").style.width = `${pct(t.dns_lookup_ms)}%`;
+        document.getElementById("wf-bar-tcp").style.width = `${pct(t.tcp_connect_ms)}%`;
+        document.getElementById("wf-bar-tls").style.width = `${pct(t.tls_handshake_ms)}%`;
+        document.getElementById("wf-bar-send").style.width = `${pct(t.request_send_ms)}%`;
+        document.getElementById("wf-bar-ttfb").style.width = `${pct(t.ttfb_ms)}%`;
+        document.getElementById("wf-bar-down").style.width = `${pct(t.download_ms)}%`;
+
+        document.getElementById("val-wf-dns").textContent = `${t.dns_lookup_ms.toFixed(1)}ms`;
+        document.getElementById("val-wf-tcp").textContent = `${t.tcp_connect_ms.toFixed(1)}ms`;
+        document.getElementById("val-wf-tls").textContent = `${t.tls_handshake_ms.toFixed(1)}ms`;
+        document.getElementById("val-wf-send").textContent = `${t.request_send_ms.toFixed(1)}ms`;
+        document.getElementById("val-wf-ttfb").textContent = `${t.ttfb_ms.toFixed(1)}ms`;
+        document.getElementById("val-wf-down").textContent = `${t.download_ms.toFixed(1)}ms`;
+
+        document.getElementById("row-dns-ms").textContent = `${t.dns_lookup_ms.toFixed(2)} ms`;
+        document.getElementById("row-dns-pct").textContent = `${pct(t.dns_lookup_ms)}%`;
+
+        document.getElementById("row-tcp-ms").textContent = `${t.tcp_connect_ms.toFixed(2)} ms`;
+        document.getElementById("row-tcp-pct").textContent = `${pct(t.tcp_connect_ms)}%`;
+
+        document.getElementById("row-tls-ms").textContent = `${t.tls_handshake_ms.toFixed(2)} ms`;
+        document.getElementById("row-tls-pct").textContent = `${pct(t.tls_handshake_ms)}%`;
+
+        document.getElementById("row-send-ms").textContent = `${t.request_send_ms.toFixed(2)} ms`;
+        document.getElementById("row-send-pct").textContent = `${pct(t.request_send_ms)}%`;
+
+        document.getElementById("row-ttfb-ms").textContent = `${t.ttfb_ms.toFixed(2)} ms`;
+        document.getElementById("row-ttfb-pct").textContent = `${pct(t.ttfb_ms)}%`;
+
+        document.getElementById("row-down-ms").textContent = `${t.download_ms.toFixed(2)} ms`;
+        document.getElementById("row-down-pct").textContent = `${pct(t.download_ms)}%`;
+
+        document.getElementById("row-total-ms").textContent = `${t.total_ms.toFixed(2)} ms`;
+      }
+    }
+
+    // ─── 集合树渲染与交互 (对标 Python collection_tree.py) ────────
+    let globalCollections = [];
+
+    async function loadCollectionsTree() {
+      try {
+        const res = await fetch("/api/collections");
+        globalCollections = await res.json();
+        const container = document.getElementById("tree-collections-container");
+        container.innerHTML = "";
+
+        if (globalCollections.length === 0) {
+          container.innerHTML = `<div style="color:var(--text-muted); font-size:11px; text-align:center; padding: 24px;">暂无集合，点击右上角 + 创建</div>`;
+          return;
+        }
+
+        for (const col of globalCollections) {
+          const colDiv = document.createElement("div");
+          colDiv.className = "tree-col-item";
+
+          // 获取该集合下的请求项
+          const reqRes = await fetch(`/api/requests?collection_id=${col.ID}`);
+          const reqList = await reqRes.json();
+
+          colDiv.innerHTML = `
+            <div class="col-header" data-cid="${col.ID}">
+              <span>📁</span>
+              <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(col.Name)}</span>
+              <span class="col-count">${reqList.length}</span>
+              <div class="col-actions">
+                <button class="icon-btn del-col-btn" title="删除集合" style="width:18px;height:18px;font-size:10px;">🗑️</button>
+              </div>
+            </div>
+            <div class="col-req-list" id="reqs-${col.ID}"></div>
+          `;
+
+          const reqsBox = colDiv.querySelector(`#reqs-${col.ID}`);
+          reqList.forEach(r => {
+            const rItem = document.createElement("div");
+            rItem.className = "tree-req-item";
+            rItem.innerHTML = `
+              <span class="method-badge method-${r.method}">${r.method}</span>
+              <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(r.name)}</span>
+              <button class="icon-btn del-req-btn" title="删除请求" style="width:16px;height:16px;font-size:9px;display:none;">✕</button>
+            `;
+            rItem.addEventListener("mouseenter", () => rItem.querySelector(".del-req-btn").style.display = "flex");
+            rItem.addEventListener("mouseleave", () => rItem.querySelector(".del-req-btn").style.display = "none");
+
+            rItem.addEventListener("click", (e) => {
+              if (e.target.closest(".del-req-btn")) return;
+              loadRequestIntoEditor(r);
+            });
+
+            rItem.querySelector(".del-req-btn").addEventListener("click", async (e) => {
+              e.stopPropagation();
+              if (confirm(`确定要删除请求 "${r.name}" 吗？`)) {
+                await fetch(`/api/requests?id=${r.id}`, { method: "DELETE" });
+                loadCollectionsTree();
+              }
+            });
+
+            reqsBox.appendChild(rItem);
+          });
+
+          colDiv.querySelector(".del-col-btn").addEventListener("click", async (e) => {
+            e.stopPropagation();
+            if (confirm(`确定要删除集合 "${col.Name}" 及其所有子请求吗？`)) {
+              await fetch(`/api/collections?id=${col.ID}`, { method: "DELETE" });
+              loadCollectionsTree();
+            }
+          });
+
+          container.appendChild(colDiv);
+        }
+      } catch (err) {
+        console.error("加载集合失败", err);
+      }
+    }
+
+    function loadRequestIntoEditor(req) {
+      document.getElementById("curr-req-name").value = req.name || "未命名请求";
+      document.getElementById("curr-req-method").value = req.method || "GET";
+      document.getElementById("curr-req-url").value = req.url || "";
+
+      // Params
+      const pTbody = document.querySelector("#table-params tbody");
+      pTbody.innerHTML = "";
+      (req.params || []).forEach(p => addTableRow("table-params", p.key, p.value, p.enabled));
+
+      // Headers
+      const hTbody = document.querySelector("#table-headers tbody");
+      hTbody.innerHTML = "";
+      (req.headers || []).forEach(h => addTableRow("table-headers", h.key, h.value, h.enabled));
+
+      // Cookies
+      const cTbody = document.querySelector("#table-cookies tbody");
+      cTbody.innerHTML = "";
+      (req.cookies || []).forEach(c => addTableRow("table-cookies", c.key, c.value, c.enabled));
+
+      // Body
+      document.getElementById("curr-req-body").value = req.body_content || "";
+      const bType = req.body_type || "none";
+      const rRadio = document.querySelector(`input[name='radio-body-type'][value='${bType}']`);
+      if (rRadio) rRadio.checked = true;
+
+      // Auth
+      authSelect.value = req.auth_type || "none";
+      authSelect.dispatchEvent(new Event("change"));
+      if (req.auth_config) {
+        if (req.auth_config.token) document.getElementById("auth-token").value = req.auth_config.token;
+        if (req.auth_config.username) document.getElementById("auth-username").value = req.auth_config.username;
+        if (req.auth_config.password) document.getElementById("auth-password").value = req.auth_config.password;
+        if (req.auth_config.key) document.getElementById("auth-key").value = req.auth_config.key;
+        if (req.auth_config.value) document.getElementById("auth-val").value = req.auth_config.value;
+      }
+
+      // 切到调试面板
+      document.querySelector(".mod-tab[data-mod='view-debug']").click();
+    }
+
+    // ─── 历史记录加载与清空 ───
+    async function loadHistory() {
+      try {
+        const res = await fetch("/api/history");
+        const list = await res.json();
+        const container = document.getElementById("history-container");
+        container.innerHTML = "";
+
+        list.slice(0, 100).forEach(h => {
+          const item = document.createElement("div");
+          item.className = "history-item";
+          item.innerHTML = `
+            <span class="method-badge method-${h.method}">${h.method}</span>
+            <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px;">
+              <div>${escapeHtml(h.url)}</div>
+              <div style="color:var(--text-muted); font-size:10px;">HTTP ${h.status_code} · ${h.elapsed_ms.toFixed(0)}ms</div>
+            </div>
+          `;
+          item.addEventListener("click", () => {
+            if (h.request_data) loadRequestIntoEditor(h.request_data);
+          });
+          container.appendChild(item);
+        });
+      } catch (err) {
+        console.error("加载历史失败", err);
+      }
+    }
+
+    document.getElementById("btn-clear-history").addEventListener("click", async () => {
+      if (confirm("确定要清空全部历史记录吗？")) {
+        await fetch("/api/history", { method: "DELETE" });
+        loadHistory();
+      }
+    });
+
+    // ─── 集合导入与导出功能 (对标 exporter.py) ──────────────────
+    const modalImportCol = document.getElementById("modal-import-col");
+    document.getElementById("menu-import-col").addEventListener("click", () => modalImportCol.classList.add("active"));
+    document.getElementById("btn-import-col-quick").addEventListener("click", () => modalImportCol.classList.add("active"));
+
+    document.getElementById("file-import-input").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        document.getElementById("text-import-json").value = reader.result;
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById("btn-do-import").addEventListener("click", async () => {
+      const jsonContent = document.getElementById("text-import-json").value.trim();
+      if (!jsonContent) {
+        alert("请选择文件或粘贴 JSON 内容");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/collections/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: jsonContent
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert("导入失败: " + data.error);
+          return;
+        }
+
+        modalImportCol.classList.remove("active");
+        alert(`导入成功！共导入 ${data.imported_collections} 个集合，${data.imported_requests} 个请求。`);
+        loadCollectionsTree();
+      } catch (err) {
+        alert("导入解析错误: " + err.message);
+      }
+    });
+
+    // 导出集合
+    function exportCollections() {
+      window.location.href = "/api/collections/export";
+    }
+    document.getElementById("menu-export-col").addEventListener("click", exportCollections);
+    document.getElementById("btn-export-col-quick").addEventListener("click", exportCollections);
+
+    // ─── 保存请求到集合 ──────────────────────────────────────────
+    const modalSaveReq = document.getElementById("modal-save-request");
+    function openSaveRequestModal() {
+      const req = buildCurrentRequest();
+      document.getElementById("save-req-name-input").value = req.name || "新建请求";
+      const sel = document.getElementById("save-req-col-select");
+      sel.innerHTML = "";
+      if (globalCollections.length === 0) {
+        sel.innerHTML = `<option value="">(请先创建集合)</option>`;
+      } else {
+        globalCollections.forEach(c => {
+          sel.innerHTML += `<option value="${c.ID}">${escapeHtml(c.Name)}</option>`;
+        });
+      }
+      modalSaveReq.classList.add("active");
+    }
+    document.getElementById("btn-save-request").addEventListener("click", openSaveRequestModal);
+    document.getElementById("menu-save-req").addEventListener("click", openSaveRequestModal);
+
+    document.getElementById("btn-confirm-save-req").addEventListener("click", async () => {
+      const req = buildCurrentRequest();
+      req.name = document.getElementById("save-req-name-input").value.trim() || req.name;
+      const cid = document.getElementById("save-req-col-select").value;
+      if (!cid) {
+        alert("请先创建或选择一个目标集合");
+        return;
+      }
+      req.collection_id = cid;
+
+      await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req)
+      });
+
+      modalSaveReq.classList.remove("active");
+      loadCollectionsTree();
+      alert("请求已成功保存到集合！");
+    });
+
+    // ─── 新建集合弹窗 ────────────────────────────────────────────
+    const modalNewCol = document.getElementById("modal-new-col");
+    document.getElementById("btn-add-collection").addEventListener("click", () => {
+      document.getElementById("input-new-col-name").value = "";
+      modalNewCol.classList.add("active");
+    });
+    document.getElementById("btn-save-new-col").addEventListener("click", async () => {
+      const name = document.getElementById("input-new-col-name").value.trim();
+      if (!name) return;
+      await fetch("/api/collections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "col_" + Date.now(), name: name })
+      });
+      modalNewCol.classList.remove("active");
+      loadCollectionsTree();
+    });
+
+    // ─── 全局请求头设置 ──────────────────────────────────────────
+    const modalGH = document.getElementById("modal-global-headers");
+    function openGlobalHeaders() {
+      fetch("/api/settings").then(r => r.json()).then(s => {
+        const tbody = document.querySelector("#table-global-headers tbody");
+        tbody.innerHTML = "";
+        if (s.global_headers && s.global_headers.length > 0) {
+          s.global_headers.forEach(h => addTableRow("table-global-headers", h.key, h.value, h.enabled));
+        } else {
+          addTableRow("table-global-headers", "", "", true);
+        }
+        modalGH.classList.add("active");
+      });
+    }
+    document.getElementById("menu-global-headers").addEventListener("click", openGlobalHeaders);
+    document.getElementById("btn-quick-headers").addEventListener("click", openGlobalHeaders);
+
+    document.getElementById("btn-save-global-headers").addEventListener("click", async () => {
+      const gHeaders = getTableData("table-global-headers");
+      const s = await (await fetch("/api/settings")).json();
+      s.global_headers = gHeaders;
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(s)
+      });
+      modalGH.classList.remove("active");
+      alert("全局请求头设置成功！在所有请求中自动生效。");
+    });
+
+    // ─── Cookie 管理器弹窗 ───────────────────────────────────────
+    const modalCookies = document.getElementById("modal-cookies");
+    document.getElementById("menu-cookies").addEventListener("click", () => modalCookies.classList.add("active"));
+    document.getElementById("btn-quick-cookies").addEventListener("click", () => modalCookies.classList.add("active"));
+
+    // ─── cURL 导入与导出 ─────────────────────────────────────────
+    const modalCurlExport = document.getElementById("modal-curl-export");
+    document.getElementById("menu-curl-export").addEventListener("click", async () => {
+      const req = buildCurrentRequest();
+      const res = await fetch("/api/curl/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req)
+      });
+      const data = await res.json();
+      document.getElementById("curl-export-area").value = data.curl_command || "";
+      modalCurlExport.classList.add("active");
+    });
+    document.getElementById("btn-copy-curl").addEventListener("click", () => {
+      navigator.clipboard.writeText(document.getElementById("curl-export-area").value);
+      alert("cURL 命令行已复制到剪贴板！");
+    });
+
+    const modalCurlImport = document.getElementById("modal-curl-import");
+    document.getElementById("menu-curl-import").addEventListener("click", () => {
+      document.getElementById("curl-import-area").value = "";
+      modalCurlImport.classList.add("active");
+    });
+    document.getElementById("btn-do-curl-parse").addEventListener("click", async () => {
+      const cmd = document.getElementById("curl-import-area").value.trim();
+      if (!cmd) return;
+      const res = await fetch("/api/curl/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: cmd })
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert("cURL 解析错误: " + data.error);
+        return;
+      }
+      loadRequestIntoEditor(data);
+      modalCurlImport.classList.remove("active");
+      alert("cURL 命令已成功载入到请求编辑器！");
+    });
+
+    // ─── 帮助与关于弹窗 ──────────────────────────────────────────
+    document.getElementById("menu-open-help").addEventListener("click", () => document.getElementById("modal-help").classList.add("active"));
+    document.getElementById("menu-open-about").addEventListener("click", () => document.getElementById("modal-about").classList.add("active"));
+
+    // ─── 系统设置弹窗 ────────────────────────────────────────────
+    const modalSettings = document.getElementById("modal-settings");
+    document.getElementById("menu-open-settings").addEventListener("click", async () => {
+      const s = await (await fetch("/api/settings")).json();
+      document.getElementById("settings-theme-select").value = s.theme || "light";
+      document.getElementById("settings-lang-select").value = s.language || "zh";
+      document.getElementById("settings-timeout-input").value = s.default_timeout || 30000;
+      modalSettings.classList.add("active");
+    });
+
+    document.getElementById("btn-save-settings").addEventListener("click", async () => {
+      const s = await (await fetch("/api/settings")).json();
+      s.theme = document.getElementById("settings-theme-select").value;
+      s.language = document.getElementById("settings-lang-select").value;
+      s.default_timeout = parseInt(document.getElementById("settings-timeout-input").value) || 30000;
+
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(s)
+      });
+      setTheme(s.theme);
+      updateLanguage(s.language);
+      modalSettings.classList.remove("active");
+      alert("系统设置保存成功！");
+    });
+
+    // ─── 模块 2: 极简高并发压测交互 (Feature 1) ───────────────────
+    const btnRunStress = document.getElementById("btn-run-stress");
+    btnRunStress.addEventListener("click", async () => {
+      const req = buildCurrentRequest();
+      if (!req.url) {
+        alert("请先在 API 调试面板中输入请求 URL");
+        return;
+      }
+
+      const cfg = {
+        concurrency: parseInt(document.getElementById("stress-concurrency").value) || 10,
+        duration_sec: parseInt(document.getElementById("stress-duration").value) || 5,
+        ramp_up_sec: parseInt(document.getElementById("stress-rampup").value) || 0,
+        delay_ms: parseInt(document.getElementById("stress-delay").value) || 0,
+      };
+
+      btnRunStress.disabled = true;
+      btnRunStress.innerHTML = "<span>⏳</span> 压测执行中...";
+      document.getElementById("statusbar-msg").textContent = `正在对 ${req.url} 执行并发压测...`;
+
+      try {
+        const res = await fetch("/api/stress/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ request: req, config: cfg })
+        });
+        const r = await res.json();
+        renderStressResult(r);
+        document.getElementById("statusbar-msg").textContent = `压测完成: 总请求 ${r.total_requests}, 平均 TPS: ${r.avg_tps.toFixed(1)}`;
+      } catch (err) {
+        alert("压测异常: " + err.message);
+      } finally {
+        btnRunStress.disabled = false;
+        btnRunStress.innerHTML = `<span>⚡</span> <span>开始压测</span>`;
+      }
+    });
+
+    function renderStressResult(r) {
+      document.getElementById("metric-st-total").textContent = r.total_requests;
+      document.getElementById("metric-st-rate").textContent = `成功率: ${r.success_rate.toFixed(1)}% (${r.success_count} 成功 / ${r.failure_count} 失败)`;
+
+      document.getElementById("metric-st-tps").textContent = r.avg_tps.toFixed(1);
+      document.getElementById("metric-st-peak-tps").textContent = `峰值 TPS: ${r.peak_tps.toFixed(1)}`;
+
+      document.getElementById("metric-st-p90").textContent = `${r.p90_ms.toFixed(1)} ms`;
+      document.getElementById("metric-st-p-detail").textContent = `P50: ${r.p50_ms.toFixed(1)}ms | P99: ${r.p99_ms.toFixed(1)}ms`;
+
+      document.getElementById("metric-st-rt").textContent = `${r.avg_latency_ms.toFixed(1)} ms`;
+      document.getElementById("metric-st-bandwidth").textContent = `带宽: ${r.bandwidth_kbps.toFixed(1)} KB/s`;
+
+      if (r.latency_bins) {
+        document.getElementById("st-bin-50").textContent = r.latency_bins["<50ms"] || 0;
+        document.getElementById("st-bin-200").textContent = r.latency_bins["50-200ms"] || 0;
+        document.getElementById("st-bin-500").textContent = r.latency_bins["200-500ms"] || 0;
+        document.getElementById("st-bin-more").textContent = r.latency_bins[">500ms"] || 0;
+      }
+
+      const statusBox = document.getElementById("st-status-pills");
+      statusBox.innerHTML = "";
+      if (r.status_code_dist) {
+        for (const [code, count] of Object.entries(r.status_code_dist)) {
+          const pill = document.createElement("span");
+          const c = parseInt(code);
+          pill.className = `status-code-pill ${c >= 200 && c < 300 ? "pill-2xx" : c >= 500 ? "pill-5xx" : "pill-4xx"}`;
+          pill.textContent = `HTTP ${code}: ${count}`;
+          statusBox.appendChild(pill);
+        }
+      }
+
+      const diagBox = document.getElementById("stress-diag-box");
+      if (r.diagnosis_tips && r.diagnosis_tips.length > 0) {
+        diagBox.innerHTML = "<ul style='margin-left: 18px; line-height: 1.6;'>" + r.diagnosis_tips.map(tip => `<li>${escapeHtml(tip)}</li>`).join("") + "</ul>";
+      } else {
+        diagBox.textContent = "当前压测表现稳定，未发现明显长尾延迟或吞吐瓶颈。";
+      }
+    }
+
+    // ─── 模块 3: 页面接口嗅探巡检交互 (Feature 2) ─────────────────
+    const btnRunSniffer = document.getElementById("btn-run-sniffer");
+    btnRunSniffer.addEventListener("click", async () => {
+      const url = document.getElementById("sniff-input-url").value.trim();
+      if (!url) {
+        alert("请输入目标网页 URL");
+        return;
+      }
+
+      btnRunSniffer.disabled = true;
+      btnRunSniffer.innerHTML = "<span>⏳</span> 嗅探分析中...";
+      document.getElementById("statusbar-msg").textContent = `正在深度嗅探 ${url} 的关联后端接口...`;
+
+      try {
+        const res = await fetch("/api/sniffer/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target_url: url })
+        });
+        const data = await res.json();
+        renderSnifferResult(data);
+        document.getElementById("statusbar-msg").textContent = `嗅探完成: 发现 ${data.total_endpoints} 个后端接口`;
+      } catch (err) {
+        alert("嗅探异常: " + err.message);
+      } finally {
+        btnRunSniffer.disabled = false;
+        btnRunSniffer.innerHTML = `<span>🔍</span> <span>一键嗅探并巡检</span>`;
+      }
+    });
+
+    function renderSnifferResult(data) {
+      document.getElementById("sniff-card-total").textContent = data.total_endpoints || 0;
+      document.getElementById("sniff-card-healthy").textContent = data.healthy_count || 0;
+      document.getElementById("sniff-card-warning").textContent = data.warning_count || 0;
+      document.getElementById("sniff-card-critical").textContent = data.critical_count || 0;
+
+      const tbody = document.querySelector("#table-sniffer-results tbody");
+      tbody.innerHTML = "";
+
+      if (!data.endpoints || data.endpoints.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">页面中未嗅探到显式 API 调用</td></tr>`;
+        return;
+      }
+
+      data.endpoints.forEach(ep => {
+        const tr = document.createElement("tr");
+        const statusTypeClass = ep.status_type === "healthy" ? "pill-2xx" : ep.status_type === "critical" ? "pill-5xx" : "pill-4xx";
+        const statusText = ep.status_type === "healthy" ? "正常健康" : ep.status_type === "critical" ? "严重错误" : "异常告警";
+
+        tr.innerHTML = `
+          <td><span class="method-badge method-${ep.method}">${ep.method}</span></td>
+          <td style="font-family: var(--font-mono); font-size: 11px;">
+            <div>${escapeHtml(ep.url)}</div>
+            ${ep.snippet ? `<div style="color:var(--text-muted); font-size:10px; margin-top:2px;">匹配来源: ${escapeHtml(ep.snippet)}</div>` : ""}
+          </td>
+          <td><span class="status-code-pill ${statusTypeClass}">${statusText}</span></td>
+          <td><strong>${ep.status_code || "-"}</strong></td>
+          <td>${ep.latency_ms ? ep.latency_ms.toFixed(1) : "-"}</td>
+          <td>
+            <div style="display:flex; gap: 4px;">
+              <button class="btn-quick import-debug-btn" style="padding: 2px 6px; font-size: 11px;">导入调试</button>
+              <button class="btn-quick direct-stress-btn" style="padding: 2px 6px; font-size: 11px;">发起压测</button>
+            </div>
+          </td>
+        `;
+
+        tr.querySelector(".import-debug-btn").addEventListener("click", () => {
+          document.getElementById("curr-req-name").value = `嗅探: ${ep.url.split("/").pop() || ep.url}`;
+          document.getElementById("curr-req-method").value = ep.method;
+          document.getElementById("curr-req-url").value = ep.url;
+          document.querySelector(".mod-tab[data-mod='view-debug']").click();
+        });
+
+        tr.querySelector(".direct-stress-btn").addEventListener("click", () => {
+          document.getElementById("curr-req-name").value = `压测: ${ep.url.split("/").pop() || ep.url}`;
+          document.getElementById("curr-req-method").value = ep.method;
+          document.getElementById("curr-req-url").value = ep.url;
+          document.querySelector(".mod-tab[data-mod='view-stress']").click();
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ─── 弹窗关闭绑定 ────────────────────────────────────────────
+    document.querySelectorAll(".close-modal-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".modal-backdrop").forEach(m => m.classList.remove("active"));
+      });
+    });
+
+    // ─── 初始化数据 ──────────────────────────────────────────────
+    addTableRow("table-params", "", "", true);
+    addTableRow("table-headers", "", "", true);
+    loadCollectionsTree();
+    loadHistory();
+  </script>
+</body>
+</html>
